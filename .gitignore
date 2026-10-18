@@ -1,0 +1,31 @@
+# 本机专属路径配置（含绝对路径，不进仓库）
+scripts/config.json
+
+# 下载产物
+downloads/
+*.mp4
+*.m4a
+*.webm
+*.part
+*.ytdl
+
+# cookie（含登录凭据，绝对不能提交）
+*.txt
+!scripts/config.example.json
+
+# Chrome 扩展打包产物
+chrome-extension/*.zip
+chrome-extension/*.crx
+chrome-extension/*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

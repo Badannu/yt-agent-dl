@@ -1,0 +1,45 @@
+name: Publish extension
+
+# 打一个 v* 标签就自动把新版本推到 Chrome 和 Edge 两个商店。
+#
+# 前提：扩展已经**手动上架过一次**（首次上架要填 listing、传截图、过审，
+# 这一步没法自动化）。本 workflow 只负责之后的版本更新。
+#
+# 需要在仓库 Settings -> Secrets 里配好下面这些变量，获取方式见
+# docs/EXTENSION_DISTRIBUTION.md 的「路线 D」。
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 打包扩展
+        run: |
+          cd chrome-extension
+          zip -r ../yt-cookie-auto.zip manifest.json background.js popup.html popup.js icons/
+          cd ..
+          test -f yt-cookie-auto.zip && echo "打包完成" || exit 1
+
+      - name: 上传到 Chrome 网上应用店
+        run: npx chrome-webstore-upload-cli upload --auto-publish --source yt-cookie-auto.zip
+        env:
+          EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+
+      - name: 发布到 Microsoft Edge Add-ons
+        uses: wdzeng/edge-addon@v1
+        with:
+          product-id: ${{ secrets.EDGE_PRODUCT_ID }}
+          zip-path: yt-cookie-auto.zip
+          client-id: ${{ secrets.EDGE_CLIENT_ID }}
+          client-secret: ${{ secrets.EDGE_CLIENT_SECRET }}
+          access-token-url: ${{ secrets.EDGE_ACCESS_TOKEN_URL }}

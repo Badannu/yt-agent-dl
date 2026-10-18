@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { width: 260px; font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+         padding: 12px; margin: 0; color: #222; }
+  h3 { margin: 0 0 10px; font-size: 14px; }
+  .row { font-size: 12px; line-height: 1.9; }
+  .ok { color: #0a7d32; font-weight: 600; }
+  .bad { color: #c0202c; font-weight: 600; }
+  button { width: 100%; margin-top: 10px; padding: 7px; font-size: 13px;
+           border: 1px solid #c8c8c8; border-radius: 4px; background: #f6f6f6; cursor: pointer; }
+  button:hover { background: #ececec; }
+  .tip { margin-top: 10px; font-size: 11px; color: #777; line-height: 1.6; }
+</style>
+</head>
+<body>
+  <h3>YT Cookie 自动同步</h3>
+  <div class="row">
+    最近导出：<span id="time">-</span><br>
+    Cookie 数：<span id="count">-</span><br>
+    登录状态：<span id="login">-</span>
+  </div>
+  <button id="export">立即导出一次</button>
+  <div class="tip">每 30 分钟自动导出，覆盖保存到「下载」目录的 yt-cookies.txt，无需手动操作。</div>
+  <script src="popup.js"></script>
+</body>
+</html>
