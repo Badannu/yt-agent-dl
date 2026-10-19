@@ -175,9 +175,50 @@ python -m yt_dlp -F "<链接>"
 
 ---
 
-## 4. cookie 相关
+## 4. 下载下来了，但没声音
 
-### 4.1 怎么判断 cookie 够不够用
+**先确认是不是真的没音轨**：
+
+```bash
+ffprobe -v error -show_entries stream=codec_type,codec_name,channels \
+  -of default=noprint_wrappers=1 "<文件>"
+```
+
+- **完全看不到 `codec_type=audio`** → 真的没音轨，重新下载，检查有没有加 `-x`（只要音频）
+- **有音轨，但 `codec_name=opus`** → 这就是原因
+
+### 为什么 Opus 会"没声音"
+
+`yt-dlp` 的 `bestaudio` 默认会挑 **Opus**（`itag 251`，码率比 AAC 高）。
+但本项目合并输出的是 **MP4 容器**，而 MP4 里放 Opus 属于边缘用法：
+
+- Windows 自带播放器（电影和电视 / Media Player）→ **有画面没声音**
+- QuickTime → 直接不支持
+- 部分剪辑软件（剪映、Premiere 旧版本）→ 导入后音频轨丢失
+- VLC / PotPlayer / mpv → 正常
+
+### 解法
+
+**首选：让脚本自己挑 AAC。** `yt_dl.py` 默认格式串已经是
+`bestvideo+bestaudio[ext=m4a]/...`，你传的 `-f "...+bestaudio..."` 也会被自动
+补一份 `bestaudio[ext=m4a]` 分支放在最前，不用手动改。
+
+**已经下好的文件，转一下就行**（视频流不重编码，8 分钟片子约 7 秒）：
+
+```bash
+ffmpeg -y -i in.mp4 -c:v copy -c:a aac -b:a 192k -movflags +faststart out.mp4
+```
+
+`-movflags +faststart` 顺手把 moov atom 挪到文件头，边下边播更顺。
+
+**想保留 Opus 又想要兼容性**：输出改成 `.mkv`（`--merge-output-format mkv`），
+MKV 对 Opus 支持完整，但 Windows 自带播放器仍可能不认。
+
+---
+
+## 5. cookie 相关
+
+### 5.1 怎么判断 cookie 够不够用
 
 只看一条：**有没有 `LOGIN_INFO`**。
 
@@ -188,7 +229,7 @@ grep LOGIN_INFO yt-cookies.txt
 条数多少不重要。扩展自动导出的 200 条照样能用；
 手动导出的 400 条里大部分是别的网站的杂项 cookie。
 
-### 4.2 Netscape 格式里 `#HttpOnly_` 是数据行，不是注释
+### 5.2 Netscape 格式里 `#HttpOnly_` 是数据行，不是注释
 
 解析 cookie 文件时，如果先判断 `line.startswith("#")` 再剥前缀，
 HttpOnly 的 `LOGIN_INFO` 会被当成注释行忽略掉。
@@ -197,7 +238,7 @@ HttpOnly 的 `LOGIN_INFO` 会被当成注释行忽略掉。
 
 这个 bug 会让"cookie 完整性校验"形同虚设——明明已经丢了登录态却不报警。
 
-### 4.3 取 cookie 必须用 `getAll({})`
+### 5.3 取 cookie 必须用 `getAll({})`
 
 Chrome 扩展里如果只对单个 URL 取 cookie（`chrome.cookies.getAll({url})`），
 会漏掉 host-only 域（不带 www 的 `youtube.com`）上的
@@ -205,7 +246,7 @@ Chrome 扩展里如果只对单个 URL 取 cookie（`chrome.cookies.getAll({url}
 
 **必须用 `chrome.cookies.getAll({})` 取整个 profile 的全量。**
 
-### 4.4 Chrome 新的 App-Bound Encryption
+### 5.4 Chrome 新的 App-Bound Encryption
 
 Chrome 127+ 引入了 App-Bound Encryption，`--cookies-from-browser chrome`
 在 Windows 上基本必然失败（`Could not copy Chrome cookie database`）。
@@ -215,9 +256,9 @@ Chrome 127+ 引入了 App-Bound Encryption，`--cookies-from-browser chrome`
 
 ---
 
-## 5. 网络 / 代理
+## 6. 网络 / 代理
 
-### 5.1 系统代理开着但代理软件没运行
+### 6.1 系统代理开着但代理软件没运行
 
 **症状：** 所有请求秒失败，或者 DNS 被污染。
 
@@ -232,7 +273,7 @@ Windows 上常见情况：系统代理开关是开的、指向 `127.0.0.1:7892`�
 
 **解法：** 启动代理软件，确认端口真的在监听。
 
-### 5.2 探测端口"开着"但判定不可用
+### 6.2 探测端口"开着"但判定不可用
 
 只 `connect()` 成功不够，得做真实连通性验证。
 但验证时：
@@ -242,7 +283,7 @@ Windows 上常见情况：系统代理开关是开的、指向 `127.0.0.1:7892`�
 
 本项目用多个中立目标（cloudflare / gstatic / 1.1.1.1）依次尝试，默认超时 8 秒。
 
-### 5.3 别高频重试
+### 6.3 别高频重试
 
 连续快速请求会把自己打到限流，表现为"本来能下的视频现在也下不了"。
 
@@ -250,7 +291,7 @@ Windows 上常见情况：系统代理开关是开的、指向 `127.0.0.1:7892`�
 
 ---
 
-## 6. 报"找不到 yt-dlp"，但其实装过
+## 7. 报"找不到 yt-dlp"，但其实装过
 
 **症状：**
 
@@ -287,7 +328,7 @@ python -m pip install -U yt-dlp
 
 ---
 
-## 7. 排查顺序建议
+## 8. 排查顺序建议
 
 ```
 1. python yt_dl.py --diagnose        # 看环境
