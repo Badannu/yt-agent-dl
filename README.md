@@ -118,8 +118,8 @@ python scripts/yt_dl.py "https://youtu.be/xxxxx" \
 
 | 参数 | 作用 |
 |---|---|
-| `-f "<格式串>"` | 指定画质，如 `bestvideo[height<=1080]+bestaudio/best` |
-| `-o <目录>` | 输出目录，默认 `./downloads` |
+| `-f "<格式串>"` | 指定画质，如 `bestvideo[height<=1080]+bestaudio/best`。串里只写 `bestaudio` 时脚本会自动补一份带 `[ext=m4a]` 的分支优先选 AAC，避免 MP4 里塞 Opus 导致"有画面没声音" |
+| `-o <目录>` | 输出目录，默认见下方「固定下载位置」 |
 | `--audio` | 只要音频（m4a） |
 | `--sub` | 内嵌中英字幕 |
 | `--simulate` | 只解析不下载，排障时用 |
@@ -127,6 +127,21 @@ python scripts/yt_dl.py "https://youtu.be/xxxxx" \
 | `--ffmpeg-dir <目录>` | ffmpeg 不在 PATH 时指定 |
 | `--proxy <url>` | 手动指定代理，如 `http://127.0.0.1:7892` |
 | `--node <路径>` | 手动指定 node 可执行文件 |
+
+### 固定下载位置（不用每次敲 `-o`）
+
+默认下载到脚本同目录的 `downloads/`。想固定到别处，写进 `scripts/config.json`：
+
+```json
+{
+  "output_dir": "C:\\Users\\YourName\\Desktop\\Temp\\YouTube-Video",
+  "ffmpeg_dir": "D:/tools/ffmpeg/bin"
+}
+```
+
+`config.json` 不进 Git（已在 `.gitignore` 里），模板见 `config.example.json`。
+优先级：**命令行 `-o` > 环境变量 `YT_OUTPUT_DIR` > `config.json` > `./downloads`**。
+跑 `--diagnose` 第一行就会打印当前生效的下载目录。
 
 ## 目录结构
 
