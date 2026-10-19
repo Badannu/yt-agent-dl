@@ -100,10 +100,21 @@ python yt_dl.py "<用户给的链接>" -f "bestvideo[height<=1080]+bestaudio/bes
 （同一个 itag 398 在不同视频上可能是 720p）。下载完用 ffprobe 验一次：
 
 ```bash
-ffprobe -v error -select_streams v:0 \
+ffprobe -v error -show_entries stream=codec_type,codec_name,channels \
   -show_entries stream=width,height -show_entries format=duration,size \
   -of default=noprint_wrappers=1 "<文件>"
 ```
+
+**顺手看一眼音轨编码**——输出里应该同时有 `codec_type=video` 和
+`codec_type=audio`。如果音轨是 **`opus`**，Windows 自带播放器、QuickTime、
+部分剪辑软件会**有画面没声音**（MP4 容器里的 Opus 兼容性很差）。
+脚本已默认优先选 AAC(`itag 140`) 规避这个问题；万一还是 opus，交付前转一下：
+
+```bash
+ffmpeg -i in.mp4 -c:v copy -c:a aac -b:a 192k -movflags +faststart out.mp4
+```
+
+视频流不重编码，几秒完成。
 
 如果实际分辨率低于用户要求，**先查片源最高有多少**：
 
