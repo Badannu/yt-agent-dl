@@ -84,7 +84,9 @@ python yt_dl.py "<用户给的链接>" -f "bestvideo[height<=1080]+bestaudio/bes
 常用参数：
 
 - `-f "..."` 画质。用户说 1080p 就用上面那条；没指定就用默认（`bestvideo+bestaudio/best`）
-- `-o <目录>` 输出目录，默认 `./downloads`
+- `-o <目录>` 输出目录，默认 `./downloads`。**用户指定了固定下载目录的话，写进
+  `scripts/config.json` 的 `output_dir`**（或设环境变量 `YT_OUTPUT_DIR`），
+  以后就不用每次敲 `-o` 了。优先级：`-o` > `YT_OUTPUT_DIR` > `config.json` > `./downloads`
 - `--audio` 只要音频（m4a）
 - `--sub` 内嵌中英字幕
 - `--simulate` 只解析不下载，**排障时先用它**，省时间且不加剧限流
