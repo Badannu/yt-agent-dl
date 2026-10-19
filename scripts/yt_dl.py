@@ -53,6 +53,20 @@ def load_config():
     return {}
 
 
+def default_out_dir(cfg=None):
+    """默认下载目录。优先级：环境变量 YT_OUTPUT_DIR > config.json 的 output_dir
+    > 脚本同目录下的 downloads/。
+
+    想固定下载位置（比如桌面某个文件夹），写进 config.json 最省事，
+    之后就不用每次敲 -o 了。
+    """
+    cfg = cfg if cfg is not None else load_config()
+    for v in (os.environ.get("YT_OUTPUT_DIR"), cfg.get("output_dir"), cfg.get("out_dir")):
+        if v:
+            return os.path.abspath(os.path.expanduser(str(v)))
+    return os.path.join(os.getcwd(), "downloads")
+
+
 def find_node(cfg=None):
     """找 Node（yt-dlp 解 YouTube nsig/sig 签名必须有 JS runtime）。"""
     cfg = cfg or {}
@@ -379,9 +393,20 @@ def build_cmd(base, url, out_dir, fmt, client, audio, sub, simulate,
     if audio:
         cmd += ["-f", "bestaudio/best", "-x", "--audio-format", "m4a"]
     elif fmt:
+        # 用户给的格式串里若只写 bestaudio（没限定容器），把含 bestaudio 的分支
+        # 各补一份 [ext=m4a] 版本置于最前 —— 见下方 AAC 说明。
+        # 按 / 拆分支处理，避免把 fallback 链拼坏。
+        if "bestaudio" in fmt and "ext=" not in fmt:
+            parts = fmt.split("/")
+            m4a_first = [p.replace("bestaudio", "bestaudio[ext=m4a]", 1)
+                         for p in parts if "bestaudio" in p]
+            fmt = "/".join(m4a_first + parts)
         cmd += ["-f", fmt]
     else:
-        cmd += ["-f", "bestvideo+bestaudio/best"]
+        # 音轨优先 m4a（AAC）：yt-dlp 默认会挑 Opus（码率更高），但 MP4 里放 Opus
+        # 兼容性很差 —— Windows 自带播放器、QuickTime、部分剪辑软件都会"有画面没声音"。
+        # YouTube 几乎所有视频都有 AAC 音轨(itag 140)，选它不损失画质也不用重编码。
+        cmd += ["-f", "bestvideo+bestaudio[ext=m4a]/bestvideo+bestaudio/best"]
     if not audio:
         cmd += ["--merge-output-format", "mp4"]
 
@@ -428,6 +453,7 @@ def diagnose(overrides=None):
     print("=" * 60)
 
     ok = True
+    print("[INFO] 下载到 : %s" % default_out_dir(cfg))
 
     base = find_ytdlp()
     if base:
@@ -555,7 +581,7 @@ def main():
     if any(a in ("--diagnose", "--doctor", "-d") for a in args):
         return diagnose(quick_overrides(args))
 
-    urls, out_dir, fmt = [], os.path.join(os.getcwd(), "downloads"), None
+    urls, out_dir, fmt = [], default_out_dir(), None
     audio = sub = simulate = False
     overrides = {}
 
