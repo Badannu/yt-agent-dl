@@ -84,6 +84,11 @@ python yt_dl.py "<用户给的链接>" -f "bestvideo[height<=1080]+bestaudio/bes
 常用参数：
 
 - `-f "..."` 画质。用户说 1080p 就用上面那条；没指定就用默认（`bestvideo+bestaudio/best`）
+- **用户指定语言时（"下英文的"）必须显式锁音轨语言**：
+  `-f "bestvideo[height<=1080]+bestaudio[language^=en]/best[height<=1080]/best"`
+  YouTube 现在普遍带多条配音轨（auto-dub），日志里音轨会显示成 `f140-6` 这种带序号的
+  形式——**说明它在多条音轨里挑**，默认选中未必是你要的语言。与 `[ext=m4a]` 自动改写
+  兼容（`bestaudio[ext=m4a][language^=en]` 是合法串联）。
 - `-o <目录>` 输出目录，默认 `./downloads`。**用户指定了固定下载目录的话，写进
   `scripts/config.json` 的 `output_dir`**（或设环境变量 `YT_OUTPUT_DIR`），
   以后就不用每次敲 `-o` 了。优先级：`-o` > `YT_OUTPUT_DIR` > `config.json` > `./downloads`
@@ -100,10 +105,14 @@ python yt_dl.py "<用户给的链接>" -f "bestvideo[height<=1080]+bestaudio/bes
 （同一个 itag 398 在不同视频上可能是 720p）。下载完用 ffprobe 验一次：
 
 ```bash
-ffprobe -v error -show_entries stream=codec_type,codec_name,channels \
-  -show_entries stream=width,height -show_entries format=duration,size \
+ffprobe -v error \
+  -show_entries stream=codec_type,codec_name,channels,width,height:stream_tags=language \
+  -show_entries format=duration,size \
   -of default=noprint_wrappers=1 "<文件>"
 ```
+
+用户点名要某种语言时，看输出里的 `TAG:language=`（如 `eng`）。
+不对照这步，就可能交付一个"画质对了但语言错了"的文件。
 
 **顺手看一眼音轨编码**——输出里应该同时有 `codec_type=video` 和
 `codec_type=audio`。如果音轨是 **`opus`**，Windows 自带播放器、QuickTime、
