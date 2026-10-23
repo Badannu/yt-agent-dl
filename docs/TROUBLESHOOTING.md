@@ -173,6 +173,29 @@ python -m yt_dlp -F "<链接>"
 
 片源最高只有 720p 时，下载再多次也拿不到 1080p，如实告诉用户即可。
 
+### 3.1 画质对了，但语言不对
+
+YouTube 现在普遍带**多条配音轨**（auto-dub）。下载日志里音轨如果显示成
+`f140-6` 这种**带序号**的形式，说明 yt-dlp 是在多条音轨里挑了一条——
+默认选中的未必是你要的语言。
+
+**指定语言时用 `language` 筛选**：
+
+```bash
+python yt_dl.py "<链接>" \
+  -f "bestvideo[height<=1080]+bestaudio[language^=en]/best[height<=1080]/best"
+```
+
+和自动补的 `[ext=m4a]` 兼容，`bestaudio[ext=m4a][language^=en]` 是合法串联。
+
+**交付前看一眼**：
+
+```bash
+ffprobe -v error -show_entries stream_tags=language -of default=noprint_wrappers=1 "<文件>"
+```
+
+输出 `TAG:language=eng` 才说明是英文轨。
+
 ---
 
 ## 4. 下载下来了，但没声音
